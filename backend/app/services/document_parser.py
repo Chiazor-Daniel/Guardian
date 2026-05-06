@@ -9,6 +9,12 @@ try:
 except ImportError:
     PYMUPDF_AVAILABLE = False
 
+try:
+    import pytesseract
+    TESSERACT_AVAILABLE = True
+except ImportError:
+    TESSERACT_AVAILABLE = False
+
 
 class DocumentParser:
     """
@@ -77,7 +83,7 @@ class DocumentParser:
 
                 # Extract images from page
                 images = page.get_images()
-                for img_index, img in enumerate(images[:3]):  # Limit to 3 images per page
+                for img_index, img in enumerate(images[:5]):  # Limit to 5 images per page
                     try:
                         xref = img[0]
                         base_image = doc.extract_image(xref)
@@ -92,7 +98,7 @@ class DocumentParser:
                             'data': f'data:image/{image_ext};base64,{img_b64}'
                         })
                     except:
-                        pass  # Skip images that can't be extracted
+                        pass
 
             result['text'] = '\n'.join(text_parts)
             doc.close()
@@ -103,7 +109,7 @@ class DocumentParser:
         return result
 
     async def _parse_image(self, content: bytes, filename: str) -> Dict:
-        """Parse image and store as base64."""
+        """Parse image and run OCR if text is detected."""
         result = {'text': '', 'images': [], 'metadata': {}}
 
         try:
@@ -123,6 +129,15 @@ class DocumentParser:
                 'filename': filename,
                 'data': f'data:{mime_type};base64,{img_b64}'
             })
+
+            # Try OCR if available
+            if TESSERACT_AVAILABLE:
+                try:
+                    ocr_text = pytesseract.image_to_string(img)
+                    if ocr_text.strip():
+                        result['text'] = f"[OCR Extracted Text]\n{ocr_text}"
+                except Exception as e:
+                    result['ocr_error'] = str(e)
 
         except Exception as e:
             result['error'] = f'Image parsing error: {str(e)}'
