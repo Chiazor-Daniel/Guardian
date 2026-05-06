@@ -1,0 +1,161 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-vault-950 text-slate-300 font-sans antialiased;
+  }
+}
+
+@layer components {
+  /* Government/FBI Panel Style */
+  .panel-fbi {
+    @apply bg-vault-900 border border-vault-700 rounded-lg;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  }
+
+  .panel-fbi-header {
+    @apply flex items-center justify-between px-5 py-4 border-b border-vault-700 bg-vault-800/50;
+  }
+
+  /* Intel Button - Government Blue */
+  .btn-intel {
+    @apply relative px-6 py-3 bg-intel-600 text-white font-medium rounded-md overflow-hidden transition-all duration-200;
+    @apply hover:bg-intel-500 hover:shadow-lg;
+    @apply active:scale-[0.98];
+    @apply disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-intel::before {
+    content: '';
+    @apply absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent;
+    transform: translateX(-100%);
+    transition: transform 0.5s ease;
+  }
+
+  .btn-intel:hover::before {
+    transform: translateX(100%);
+  }
+
+  /* Intel Input */
+  .input-intel {
+    @apply w-full px-4 py-3 bg-vault-950 border border-vault-600 rounded-md text-white placeholder:text-vault-500;
+    @apply focus:outline-none focus:border-intel-500 focus:ring-1 focus:ring-intel-500/30;
+    @apply transition-all duration-200;
+  }
+
+  /* Secure Dropzone */
+  .dropzone-intel {
+    @apply relative border-2 border-dashed border-vault-600 rounded-lg p-8 min-h-[160px];
+    @apply flex flex-col items-center justify-center cursor-pointer;
+    @apply transition-all duration-300;
+    @apply hover:border-intel-500 hover:bg-intel-500/5;
+  }
+
+  .dropzone-intel.active {
+    @apply border-intel-400 bg-intel-500/10;
+  }
+
+  /* Status Badges - FBI Style */
+  .badge {
+    @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium uppercase tracking-wider;
+  }
+
+  .badge-secure {
+    @apply bg-secure/10 text-secure border border-secure/20;
+  }
+
+  .badge-caution {
+    @apply bg-caution/10 text-caution border border-caution/20;
+  }
+
+  .badge-threat {
+    @apply bg-threat/10 text-threat border border-threat/20;
+  }
+
+  .badge-critical {
+    @apply bg-critical/20 text-red-400 border border-critical/30;
+    animation: pulseIntel 2s ease-in-out infinite;
+  }
+
+  .badge-intel {
+    @apply bg-intel-500/10 text-intel-400 border border-intel-500/20;
+  }
+
+  /* Classification Markers */
+  .classified-stamp {
+    @apply inline-flex items-center gap-1 px-2 py-0.5 border border-intel-500/30 text-intel-400 text-xs font-mono uppercase tracking-widest;
+  }
+
+  /* Scan Line Effect */
+  .scan-line {
+    @apply absolute left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-intel-400 to-transparent opacity-60;
+    box-shadow: 0 0 10px rgba(34, 211, 238, 0.5);
+  }
+
+  /* Loading Bar */
+  .loading-bar {
+    @apply h-1 bg-vault-700 rounded-full overflow-hidden;
+  }
+
+  .loading-bar-fill {
+    @apply h-full bg-gradient-to-r from-intel-600 to-intel-400 rounded-full;
+    transition: width 0.3s ease;
+  }
+
+  /* Data Grid */
+  .data-row {
+    @apply flex items-center justify-between py-3 border-b border-vault-700/50 last:border-0;
+  }
+
+  .data-label {
+    @apply text-sm text-slate-400 font-medium uppercase tracking-wide;
+  }
+
+  .data-value {
+    @apply text-sm text-slate-200 font-mono;
+  }
+
+  /* Security Seal */
+  .seal {
+    @apply inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-semibold uppercase tracking-wider;
+  }
+
+  .seal-verified {
+    @apply bg-secure/10 text-secure border border-secure/30;
+  }
+
+  .seal-warning {
+    @apply bg-caution/10 text-caution border border-caution/30;
+  }
+
+  .seal-danger {
+    @apply bg-threat/10 text-threat border border-threat/30;
+  }
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-vault-950;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-vault-600 rounded;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-vault-500;
+}
+
+/* Focus styles */
+*:focus-visible {
+  @apply outline-none ring-2 ring-intel-500/50 ring-offset-2 ring-offset-vault-950;
+}
