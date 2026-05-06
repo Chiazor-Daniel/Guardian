@@ -1,10 +1,11 @@
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
 import asyncio
-from dotenv import load_dotenv
 import os
+from dotenv import load_dotenv
 
 # Load environment variables from .env file
 load_dotenv()
@@ -80,3 +81,9 @@ async def analyze_assets(
 @app.get("/health")
 async def health_check():
     return {"status": "healthy", "service": "Guardian LPU"}
+
+
+# Serve static files (frontend) - only if static directory exists
+static_dir = os.path.join(os.path.dirname(__file__), "..", "static")
+if os.path.exists(static_dir):
+    app.mount("/", StaticFiles(directory=static_dir, html=True), name="static")
