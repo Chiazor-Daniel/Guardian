@@ -174,34 +174,35 @@ VERDICT LEVELS:
 
         prompt_parts.append("\n--- INSTRUCTIONS ---")
         prompt_parts.append("""
-Analyze the screenshot and data above. Be SPECIFIC about what you see on the page.
+CRITICAL: Analyze the content CAREFULLY. Do NOT flag innocent images/files as suspicious.
 
-First, describe what the website CLAIMS to be:
-- Is it a bank, crypto exchange, shopping site, login page?
-- What brand/logo do you see?
-- What is the page asking the user to do? (login, invest, buy, download?)
+For IMAGES (not websites):
+- If it's a photo, wallpaper, artwork, screenshot of a game, personal photo, etc → Mark as SAFE (score 0-20)
+- ONLY flag as suspicious if image contains: fake login forms, crypto scam ads, phishing screenshots, fake bank pages, suspicious QR codes, scam messages
 
-Then check for red flags:
-- Brand impersonation (fake Chase, fake Amazon, fake MetaMask, etc)
-- Urgency tactics (countdown timers, "act now", "limited time")
-- Fake login forms that steal passwords
-- Crypto investment scams promising guaranteed returns
-- Poor grammar/spelling in official-looking pages
-- Domain too new for the claimed company
+For WEBSITES:
+- Analyze if it's actually a scam site or legitimate
 
-Provide your analysis in this EXACT JSON format:
+Provide analysis in this EXACT JSON format:
 
 {
     "verdict": "CRITICAL_RISK|HIGH_RISK|MEDIUM_RISK|LOW_RISK|SAFE",
     "score": 0-100,
-    "summary": "Be specific! Say things like: 'This claims to be Chase bank login but the domain is wrong' or 'Promises 500% crypto returns with fake testimonials' or 'Legitimate PayPal login page'",
+    "summary": "Specific description. For innocent images: 'This appears to be a wallpaper/image file with no scam content'. For scams: 'This shows a fake Chase login page designed to steal passwords'",
     "evidence": [
-        {"type": "DESCRIPTION", "detail": "What the site claims to be (bank, shop, etc)", "severity": "info"},
-        {"type": "RED_FLAG", "detail": "Specific suspicious element you found", "severity": "warning|critical"}
+        {"type": "DESCRIPTION", "detail": "What was analyzed (website, image file, etc)", "severity": "info"},
+        {"type": "CONTENT", "detail": "What the content actually shows", "severity": "info"}
     ],
-    "recommended_action": "Be specific! 'Don't enter your password' or 'This looks like the real PayPal, safe to use'"
+    "recommended_action": "Specific advice. Innocent images: 'No action needed - this is just an image file'. Scams: 'Do not interact with this content'"
 }
 
-Score >70 if ANY red flags found. Score >90 if definitely a scam. Score <30 if clearly legitimate.""")
+SCORING:
+- 0-20: Safe/innocent (images, photos, wallpapers, legitimate sites)
+- 21-40: Low risk (minor concerns)
+- 41-69: Medium risk (some suspicious elements)
+- 70-89: High risk (likely scam)
+- 90-100: Critical (confirmed scam, phishing, fraud)
+
+DO NOT over-analyze innocent images. Most images are SAFE.""")
 
         return "\n".join(prompt_parts)

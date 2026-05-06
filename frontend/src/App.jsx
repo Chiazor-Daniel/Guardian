@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react'
-import { Shield, Upload, Link, X, CheckCircle, AlertCircle, AlertTriangle, Lock, FileText, Globe, Activity, Search } from 'lucide-react'
+import { Shield, Upload, Link, X, CheckCircle, AlertCircle, AlertTriangle, Lock, FileText, Globe, Activity, Image, Eye } from 'lucide-react'
 import { analyzeAssets } from './utils/api'
 
 // Animated scan line
@@ -15,7 +15,7 @@ function ScanEffect() {
 function Header({ status }) {
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-vault-900 border-b border-vault-700">
-      <div className="max-w-4xl mx-auto px-6 py-4">
+      <div className="max-w-6xl mx-auto px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="w-10 h-10 bg-intel-600 rounded-md flex items-center justify-center shadow-lg">
@@ -38,6 +38,40 @@ function Header({ status }) {
   )
 }
 
+// Image Preview Component
+function ImagePreview({ file, onRemove }) {
+  const [preview, setPreview] = useState(null)
+
+  useEffect(() => {
+    if (file && file.type.startsWith('image/')) {
+      const reader = new FileReader()
+      reader.onloadend = () => setPreview(reader.result)
+      reader.readAsDataURL(file)
+    }
+  }, [file])
+
+  if (!preview) return null
+
+  return (
+    <div className="relative group">
+      <img
+        src={preview}
+        alt={file.name}
+        className="w-full h-48 object-cover rounded-lg border border-vault-600"
+      />
+      <button
+        onClick={onRemove}
+        className="absolute top-2 right-2 p-1.5 bg-vault-900/80 text-white rounded-md opacity-0 group-hover:opacity-100 transition-opacity"
+      >
+        <X className="w-4 h-4" />
+      </button>
+      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-vault-900 to-transparent p-2">
+        <p className="text-xs text-slate-300 truncate">{file.name}</p>
+      </div>
+    </div>
+  )
+}
+
 // Main App
 function App() {
   const [files, setFiles] = useState([])
@@ -46,6 +80,7 @@ function App() {
   const [result, setResult] = useState(null)
   const [dragActive, setDragActive] = useState(false)
   const [progress, setProgress] = useState(0)
+  const [previewUrls, setPreviewUrls] = useState([])
 
   useEffect(() => {
     if (isScanning) {
@@ -74,13 +109,15 @@ function App() {
     e.stopPropagation()
     setDragActive(false)
     if (e.dataTransfer.files?.[0]) {
-      setFiles(prev => [...prev, ...Array.from(e.dataTransfer.files)])
+      const newFiles = Array.from(e.dataTransfer.files)
+      setFiles(prev => [...prev, ...newFiles])
     }
   }, [])
 
   const handleFileInput = (e) => {
     if (e.target.files?.[0]) {
-      setFiles(prev => [...prev, ...Array.from(e.target.files)])
+      const newFiles = Array.from(e.target.files)
+      setFiles(prev => [...prev, ...newFiles])
     }
   }
 
@@ -179,19 +216,22 @@ function App() {
     }
   }
 
+  // Filter image files for preview
+  const imageFiles = files.filter(f => f.type.startsWith('image/'))
+
   return (
     <div className="min-h-screen bg-vault-950">
       {isScanning && <ScanEffect />}
       <Header status={isScanning ? 'scanning' : 'ready'} />
 
-      <main className="relative z-10 max-w-4xl mx-auto px-6 pt-28 pb-20">
+      <main className="relative z-10 max-w-6xl mx-auto px-6 pt-28 pb-20">
         {/* Input Form */}
         {!result && !isScanning && (
           <div className="animate-fade-in">
             <div className="panel-fbi">
               <div className="panel-fbi-header">
                 <div className="flex items-center gap-3">
-                  <Search className="w-4 h-4 text-intel-400" />
+                  <Eye className="w-4 h-4 text-intel-400" />
                   <h2 className="text-sm font-semibold text-slate-200 uppercase tracking-wider">Target Analysis</h2>
                 </div>
                 <span className="classified-stamp">
@@ -210,7 +250,7 @@ function App() {
                   <textarea
                     value={urls}
                     onChange={(e) => setUrls(e.target.value)}
-                    placeholder="https://example.com, https://suspicious-site.net"
+                    placeholder="Paste links here, separated by commas..."
                     className="input-intel min-h-[100px] resize-none text-sm"
                     disabled={isScanning}
                   />
@@ -226,9 +266,10 @@ function App() {
                 {/* File Upload */}
                 <div>
                   <label className="flex items-center gap-2 text-sm text-slate-400 mb-2">
-                    <FileText className="w-4 h-4" />
-                    Evidence Files
+                    <Image className="w-4 h-4" />
+                    Upload Images or Files
                   </label>
+
                   <div
                     onDragEnter={handleDrag}
                     onDragLeave={handleDrag}
@@ -239,6 +280,7 @@ function App() {
                     <input
                       type="file"
                       multiple
+                      accept="image/*,.pdf,.txt"
                       onChange={handleFileInput}
                       className="hidden"
                       id="file-input"
@@ -246,24 +288,38 @@ function App() {
                     />
                     <label htmlFor="file-input" className="cursor-pointer text-center">
                       <Upload className="w-8 h-8 text-vault-500 mx-auto mb-3" />
-                      <p className="text-sm text-slate-300">Drop files or click to browse</p>
-                      <p className="text-xs text-vault-500 mt-1">PDF, Images, Documents</p>
+                      <p className="text-sm text-slate-300">Drop images/files or click to browse</p>
+                      <p className="text-xs text-vault-500 mt-1">Supports: JPG, PNG, PDF, TXT</p>
                     </label>
                   </div>
 
-                  {files.length > 0 && (
+                  {/* Image Previews */}
+                  {imageFiles.length > 0 && (
+                    <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-3">
+                      {imageFiles.map((file, idx) => (
+                        <ImagePreview
+                          key={idx}
+                          file={file}
+                          onRemove={() => removeFile(files.indexOf(file))}
+                        />
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Non-image files list */}
+                  {files.filter(f => !f.type.startsWith('image/')).length > 0 && (
                     <div className="mt-4 space-y-2">
-                      {files.map((file, idx) => (
+                      {files.filter(f => !f.type.startsWith('image/')).map((file, idx) => (
                         <div
                           key={idx}
-                          className="flex items-center justify-between bg-vault-950 border border-vault-700 rounded-md px-4 py-3 group hover:border-intel-500/30 transition-colors"
+                          className="flex items-center justify-between bg-vault-950 border border-vault-700 rounded-md px-4 py-3"
                         >
                           <div className="flex items-center gap-3">
                             <FileText className="w-4 h-4 text-intel-400" />
                             <span className="text-sm text-slate-300 font-mono">{file.name}</span>
                           </div>
                           <button
-                            onClick={() => removeFile(idx)}
+                            onClick={() => removeFile(files.indexOf(file))}
                             className="p-1 text-vault-500 hover:text-white transition-colors"
                           >
                             <X className="w-4 h-4" />
@@ -283,18 +339,6 @@ function App() {
                   <Activity className="w-4 h-4" />
                   INITIATE THREAT ANALYSIS
                 </button>
-              </div>
-            </div>
-
-            {/* Security Notice */}
-            <div className="mt-6 flex items-center justify-center gap-6 text-xs text-slate-500">
-              <div className="flex items-center gap-2">
-                <Lock className="w-3 h-3" />
-                <span className="font-mono uppercase">Encrypted Analysis</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Activity className="w-3 h-3" />
-                <span className="font-mono uppercase">Groq LPU Powered</span>
               </div>
             </div>
           </div>
@@ -332,43 +376,91 @@ function App() {
 
               return (
                 <>
-                  {/* Main Result Card */}
-                  <div className={`panel-fbi border-l-4 ${styles.border}`}>
-                    <div className={`${styles.bg} px-6 py-4 border-b ${styles.border}`}>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <Icon className={`w-5 h-5 ${styles.color}`} />
-                          <span className={`text-sm font-bold tracking-wider ${styles.color}`}>{styles.label}</span>
+                  {/* Image Preview + Result Side by Side */}
+                  {imageFiles.length > 0 && (
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                      {/* Image Preview */}
+                      <div className="panel-fbi">
+                        <div className="panel-fbi-header">
+                          <h3 className="text-sm font-semibold text-slate-200 uppercase tracking-wider">Evidence Preview</h3>
+                          <span className="text-xs text-slate-500 font-mono">{imageFiles.length} IMAGE(S)</span>
                         </div>
-                        <span className={styles.seal}>
-                          <Lock className="w-3 h-3" />
-                          {result.verdict === 'SAFE' ? 'VERIFIED' : result.verdict === 'CRITICAL_RISK' ? 'DANGER' : 'ANALYZED'}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="p-6">
-                      <div className="flex flex-col sm:flex-row items-center gap-6">
-                        <div className="relative">
-                          <div className={`w-24 h-24 rounded-full border-4 ${styles.border} ${styles.bg} flex items-center justify-center`}>
-                            <span className={`text-3xl font-bold ${styles.color} font-mono`}>{result.score}</span>
+                        <div className="p-4">
+                          <div className="grid grid-cols-1 gap-3">
+                            {imageFiles.slice(0, 3).map((file, idx) => (
+                              <ImagePreview
+                                key={idx}
+                                file={file}
+                                onRemove={() => {}}
+                              />
+                            ))}
                           </div>
-                          <div className="absolute -bottom-1 -right-1">
-                            <div className={`w-8 h-8 rounded-full ${styles.bg} ${styles.border} border-2 flex items-center justify-center`}>
-                              <Icon className={`w-4 h-4 ${styles.color}`} />
+                        </div>
+                      </div>
+
+                      {/* Analysis Result */}
+                      <div className={`panel-fbi border-l-4 ${styles.border}`}>
+                        <div className={`${styles.bg} px-5 py-4 border-b ${styles.border}`}>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <Icon className={`w-5 h-5 ${styles.color}`} />
+                              <span className={`text-sm font-bold tracking-wider ${styles.color}`}>{styles.label}</span>
+                            </div>
+                            <span className={styles.seal}>
+                              <Lock className="w-3 h-3" />
+                              {result.verdict === 'SAFE' ? 'VERIFIED' : result.verdict === 'CRITICAL_RISK' ? 'DANGER' : 'ANALYZED'}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="p-5">
+                          <div className="flex items-center gap-4 mb-4">
+                            <div className={`w-20 h-20 rounded-full border-4 ${styles.border} ${styles.bg} flex items-center justify-center`}>
+                              <span className={`text-2xl font-bold ${styles.color} font-mono`}>{result.score}</span>
+                            </div>
+                            <div>
+                              <p className="text-lg text-slate-200">{result.summary}</p>
+                              <p className="text-xs text-vault-500 font-mono mt-1">
+                                Analysis completed in {result.processing_time_ms}ms
+                              </p>
                             </div>
                           </div>
                         </div>
+                      </div>
+                    </div>
+                  )}
 
-                        <div className="flex-1 text-center sm:text-left">
-                          <p className="text-lg text-slate-200 mb-2">{result.summary}</p>
-                          <p className="text-xs text-vault-500 font-mono">
-                            Analysis completed in {result.processing_time_ms}ms
-                          </p>
+                  {/* URL-only Result (no images) */}
+                  {imageFiles.length === 0 && (
+                    <div className={`panel-fbi border-l-4 ${styles.border}`}>
+                      <div className={`${styles.bg} px-5 py-4 border-b ${styles.border}`}>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <Icon className={`w-5 h-5 ${styles.color}`} />
+                            <span className={`text-sm font-bold tracking-wider ${styles.color}`}>{styles.label}</span>
+                          </div>
+                          <span className={styles.seal}>
+                            <Lock className="w-3 h-3" />
+                            {result.verdict === 'SAFE' ? 'VERIFIED' : result.verdict === 'CRITICAL_RISK' ? 'DANGER' : 'ANALYZED'}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="p-6">
+                        <div className="flex flex-col sm:flex-row items-center gap-6">
+                          <div className={`w-24 h-24 rounded-full border-4 ${styles.border} flex items-center justify-center bg-vault-900`}>
+                            <span className={`text-3xl font-bold ${styles.color} font-mono`}>{result.score}</span>
+                          </div>
+                          <div className="flex-1 text-center sm:text-left">
+                            <p className="text-lg text-slate-200 mb-2">{result.summary}</p>
+                            <p className="text-xs text-vault-500 font-mono">
+                              Analysis completed in {result.processing_time_ms}ms
+                            </p>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
+                  )}
 
                   {/* Evidence Details */}
                   {result.evidence && result.evidence.length > 0 && (
@@ -399,7 +491,7 @@ function App() {
                   )}
 
                   {/* Recommendation */}
-                  <div className={`panel-fbi ${result.verdict === 'CRITICAL_RISK' || result.verdict === 'HIGH_RISK' ? 'border-threat/30' : ''}`}>
+                  <div className={`panel-fbi ${result.verdict === 'CRITICAL_RISK' || result.verdict === 'HIGH_RISK' ? 'border-threat/30 bg-threat/5' : ''}`}>
                     <div className="panel-fbi-header">
                       <h3 className="text-sm font-semibold text-slate-200 uppercase tracking-wider">Directive</h3>
                     </div>
